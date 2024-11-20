@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "poop-app",
-    "slug": "poop-app",
+    "name": "todoList",
+    "slug": "todoList",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",

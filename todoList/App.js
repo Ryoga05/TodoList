@@ -10,11 +10,13 @@ import { FIREBASE_AUTH } from './firebaseConfig';
 const Stack = createNativeStackNavigator();
 const InsideStack = createNativeStackNavigator();
 
-function InsideLayout() {
+export default function App() {
   return (
-    <InsideStack.Navigator>
-      <InsideStack.Screen name="TodoList" component={TodoList} options={{ headerShown: true, animation: 'none' }} />
-      <InsideStack.Screen name="NewTodo" component={NewTodo} options={{ headerShown: true, animation: 'none' }} />
-    </InsideStack.Navigator>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="TodoList">
+        <Stack.Screen name="TodoList" component={TodoList} options={{ headerShown: false ,  animation: 'none'}}/>
+        <Stack.Screen name="NewTodo" component={NewTodo} options={{ headerShown: false ,  animation: 'none'}} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
