@@ -1,20 +1,65 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+
+import { FIREBASE_STORAGE } from '../firebaseConfig'; // Importa la configuración de Firebase
+import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export default function TodoList({ navigation }) {
 
-  const [tasks, setTasks] = useState([
-    { id: '1', title: 'Comprar leche', deadline: '2024-11-25', completed: false },
-    { id: '2', title: 'Estudiar React Native', deadline: '2024-11-26', completed: false },
-    { id: '3', title: 'Enviar correos', deadline: '', completed: true }, // Sin deadline
-  ]);
+  const [tasks, setTasks] = useState([]);
 
-  const toggleComplete = (id) => {
+  const fetchTasks = async () => {
+    const querySnapshot = await getDocs(collection(FIREBASE_STORAGE, "TodoList"));
+    const tasksArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setTasks(tasksArray);
+  };
+
+  useEffect(() => {
+
+    fetchTasks();
+  }, []);
+
+  const handleDelete = async (id) => {
+    Alert.alert(
+      'Eliminar tarea',
+      '¿Estás seguro de que deseas eliminar esta tarea?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: async () => {
+            await deleteDoc(doc(FIREBASE_STORAGE, "TodoList", id));
+            setTasks(tasks.filter(task => task.id !== id));
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+
+    fetchTasks();
+  };
+
+  const editTask = (task) => {
+    navigation.navigate('NewTodo', { task }); // Pasamos la tarea a editar como parámetro
+  };
+
+  const toggleComplete = async (id) => {
+    const taskRef = doc(FIREBASE_STORAGE, "TodoList", id); // Referencia al documento de la tarea
+    const task = tasks.find(task => task.id === id);
+    // Actualizar el campo "completed" en Firestore
+    await updateDoc(taskRef, {
+      completed: !task.completed, // Cambiar el estado de "completed"
+    });
+    // Actualizar el estado local de las tareas
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
     );
     setTasks(updatedTasks);
+    fetchTasks();
   };
 
   const renderItem = ({ item }) => (
@@ -37,10 +82,10 @@ export default function TodoList({ navigation }) {
 
       {/* Botones de Editar y Eliminar */}
       <View style={styles.taskActions}>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity style={styles.editButton} onPress={() => editTask(item)}>
           <Text style={styles.buttonText}>Edit</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item.id)}>
           <Text style={styles.buttonText}>Delete</Text>
         </TouchableOpacity>
       </View>
@@ -58,7 +103,7 @@ export default function TodoList({ navigation }) {
 
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => navigation.navigate('NewTodo')}
+        onPress={() => navigation.navigate('NewTodo', { refreshTasks: fetchTasks })}
       >
         <Icon name="add" size={30} color="#fff" />
       </TouchableOpacity>
